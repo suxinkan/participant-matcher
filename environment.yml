@@ -1,0 +1,9 @@
+name: participant-matcher
+channels:
+  - defaults
+dependencies:
+  - python==3.12.9
+  - numpy
+  - pandas
+  - scikit-learn
+prefix: /opt/homebrew/anaconda3/envs/participant-matcher
