@@ -157,15 +157,24 @@ class ParticipantMatcher:
         if not matches:
             return {}
             
-        scores = [score for _, _, score in matches]
+        # Extract scores, defaulting to 0.0 if not provided
+        scores = []
+        for match in matches:
+            if len(match) == 3:  # Has score
+                scores.append(match[2])
+            else:  # No score provided
+                scores.append(0.0)
         
+        if not scores:  # Shouldn't happen due to earlier check, but just in case
+            return {'total_matches': 0}
+            
         return {
             'total_matches': len(matches),
-            'average_score': np.mean(scores),
+            'average_score': float(np.mean(scores)),
             'score_distribution': {
-                'min': min(scores),
-                'max': max(scores),
-                'std_dev': np.std(scores)
+                'min': float(min(scores)),
+                'max': float(max(scores)),
+                'std_dev': float(np.std(scores)) if len(scores) > 1 else 0.0
             },
             'successful_matches': sum(1 for score in scores if score > 0.5)
         }
