@@ -92,31 +92,117 @@ def main():
     print("\nOverall Match Statistics:")
     print(json.dumps(stats, indent=2))
     
-    # Save matches to CSV
-    output_file = save_matches_to_csv(participants, matches_by_participant)
-    if output_file:
-        print(f"\nMatch details have been saved to {output_file}")
+    # Save potential matches to CSV
+    potential_file = save_matches_to_csv(participants, matches_by_participant, confirmed=False)
+    if potential_file:
+        print(f"\nPotential match details have been saved to {potential_file}")
+    
+    # Generate and save confirmed matches
+    confirmed_matches = generate_confirmed_matches(matches_by_participant)
+    confirmed_file = save_confirmed_matches(confirmed_matches)
+    if confirmed_file:
+        print(f"Confirmed matches have been saved to {confirmed_file}")
+        
+        # Print confirmed matches
+        print("\nConfirmed Matches:")
+        for i, (p1, p2, score) in enumerate(confirmed_matches, 1):
+            print(f"  {i}. {p1} ↔ {p2} (Score: {score:.2f})")
+        print(f"\nTotal confirmed matches: {len(confirmed_matches)}")
+
+def save_confirmed_matches(confirmed_matches, filename=None):
+    """Save confirmed matches to a CSV file.
+    
+    Args:
+        confirmed_matches: List of tuples (participant1_id, participant2_id, score)
+        filename: Output filename (without path). If None, uses default.
+        
+    Returns:
+        str: Path to the saved file, or None if there was an error
+    """
+    ensure_data_directory()
+    
+    if filename is None:
+        filename = "confirmed_matches.csv"
+    
+    # Ensure filename is in the data directory and has .csv extension
+    if not filename.startswith('data/'):
+        filename = os.path.join('data', filename)
+    if not filename.endswith('.csv'):
+        filename += '.csv'
+    
+    try:
+        with open(filename, 'w', newline='') as csvfile:
+            fieldnames = ['participant1_id', 'participant2_id', 'match_score']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            
+            for p1_id, p2_id, score in confirmed_matches:
+                writer.writerow({
+                    'participant1_id': p1_id,
+                    'participant2_id': p2_id,
+                    'match_score': f"{score:.4f}"
+                })
+        
+        return filename
+    except Exception as e:
+        print(f"Error saving confirmed matches to {filename}: {str(e)}")
+        return None
 
 def ensure_data_directory():
     """Ensure the data directory exists."""
     os.makedirs('data', exist_ok=True)
 
-def save_matches_to_csv(participants, matches_by_participant, filename=None):
-    """Save potential matches to a CSV file in the data directory with one row per participant.
+def generate_confirmed_matches(matches_by_participant):
+    """Generate confirmed matches by selecting highest-scoring unique pairs.
+    
+    Args:
+        matches_by_participant: Dictionary mapping participant IDs to their top matches
+        
+    Returns:
+        List of tuples (participant1_id, participant2_id, score) representing confirmed matches
+    """
+    confirmed = set()
+    confirmed_matches = []
+    
+    # Create a list of all potential matches with scores
+    all_matches = []
+    for p1_id, matches in matches_by_participant.items():
+        for p2, score in matches:
+            # Ensure we don't have duplicates by sorting the pair
+            pair = tuple(sorted([p1_id, p2.id]))
+            all_matches.append((pair[0], pair[1], score))
+    
+    # Sort all matches by score in descending order
+    all_matches.sort(key=lambda x: x[2], reverse=True)
+    
+    # Select highest scoring non-conflicting matches
+    for p1_id, p2_id, score in all_matches:
+        if p1_id not in confirmed and p2_id not in confirmed:
+            confirmed.add(p1_id)
+            confirmed.add(p2_id)
+            confirmed_matches.append((p1_id, p2_id, score))
+    
+    return confirmed_matches
+
+def save_matches_to_csv(participants, matches_by_participant, filename=None, confirmed=False):
+    """Save matches to a CSV file in the data directory with one row per participant.
     
     Args:
         participants: List of all participant objects
         matches_by_participant: Dictionary mapping participant IDs to their top matches
-        filename: Output filename (without path). If None, generates a timestamped filename.
+        filename: Output filename (without path). If None, generates a default filename.
+        confirmed: If True, saves only confirmed matches (mutual best matches)
     """
     ensure_data_directory()
     
     if filename is None:
-        filename = "potential_matches.csv"
+        filename = "confirmed_matches.csv" if confirmed else "potential_matches.csv"
     
-    # Ensure filename is in the data directory
+    # Ensure filename is in the data directory and has .csv extension
     if not filename.startswith('data/'):
         filename = os.path.join('data', filename)
+    if not filename.endswith('.csv'):
+        filename += '.csv'
     
     # Simplified field names - only participant ID, match IDs, and scores
     fieldnames = ['participant_id']
