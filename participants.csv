@@ -1,0 +1,5 @@
+id,interests,availability,experience_level,location,age,gender
+p1,"hiking,photography,travel,mountain biking","{'monday': ['10:00-12:00', '14:00-16:00'], 'wednesday': ['16:00-18:00']}",intermediate,New York,28,male
+p2,"hiking,travel,cooking,camping","{'monday': ['10:00-12:00', '14:00-16:00'], 'tuesday': ['18:00-20:00']}",beginner,New York,25,female
+p3,"photography,cooking,music,guitar","{'tuesday': ['14:00-16:00'], 'thursday': ['19:00-21:00']}",advanced,Boston,32,other
+p4,"travel,music,reading,writing","{'friday': ['10:00-12:00'], 'saturday': ['14:00-16:00']}",intermediate,New York,35,female

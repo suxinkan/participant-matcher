@@ -1,67 +1,52 @@
 from participant import Participant
 from matcher import ParticipantMatcher
 import json
+import csv
+import ast
 
-def create_example_participants():
-    """Create some example participants for demonstration."""
-    participants = [
-        Participant(
-            id="p1",
-            interests=["hiking", "photography", "travel", "mountain biking"],
-            availability={
-                "monday": ["10:00-12:00", "14:00-16:00"],
-                "wednesday": ["16:00-18:00"]
-            },
-            experience_level="intermediate",
-            location="New York",
-            age=28,
-            gender="male"
-        ),
-        Participant(
-            id="p2",
-            interests=["hiking", "travel", "cooking", "camping"],
-            availability={
-                "monday": ["10:00-12:00", "14:00-16:00"],
-                "tuesday": ["18:00-20:00"]
-            },
-            experience_level="beginner",
-            location="New York",
-            age=25,
-            gender="female"
-        ),
-        Participant(
-            id="p3",
-            interests=["photography", "cooking", "music", "guitar"],
-            availability={
-                "tuesday": ["14:00-16:00"],
-                "thursday": ["19:00-21:00"]
-            },
-            experience_level="advanced",
-            location="Boston",
-            age=32,
-            gender="other"
-        ),
-        Participant(
-            id="p4",
-            interests=["travel", "music", "reading", "writing"],
-            availability={
-                "friday": ["10:00-12:00"],
-                "saturday": ["14:00-16:00"]
-            },
-            experience_level="intermediate",
-            location="New York",
-            age=35,
-            gender="female"
-        )
-    ]
+def load_participants_from_csv(filename):
+    """Load participants from a CSV file."""
+    participants = []
+    with open(filename, 'r') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            try:
+                # Convert string fields to appropriate types
+                interests = [i.strip() for i in row['interests'].split(',')]
+                # Safely evaluate the availability string to a dictionary
+                availability = ast.literal_eval(row['availability'])
+                age = int(row['age']) if row['age'] else None
+                
+                participant = Participant(
+                    id=row['id'],
+                    interests=interests,
+                    availability=availability,
+                    experience_level=row['experience_level'],
+                    location=row['location'],
+                    age=age,
+                    gender=row['gender'] if row['gender'] else None
+                )
+                participants.append(participant)
+            except Exception as e:
+                print(f"Error processing participant {row.get('id', 'unknown')}: {str(e)}")
+                continue
+    
+    if not participants:
+        raise ValueError("No valid participants found in the CSV file")
+    
+    print(f"Successfully loaded {len(participants)} participants from {filename}")
     return participants
 
 def main():
-    # Create matcher and add participants
+    # Create matcher and load participants from CSV
     matcher = ParticipantMatcher()
-    participants = create_example_participants()
-    for participant in participants:
-        matcher.add_participant(participant)
+    try:
+        participants = load_participants_from_csv('participants.csv')
+        for participant in participants:
+            matcher.add_participant(participant)
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return
     
     # Find matches using heuristic scoring (since we don't have enough historical data)
     print("\nFinding matches using heuristic scoring...")
