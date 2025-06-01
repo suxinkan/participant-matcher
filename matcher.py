@@ -94,46 +94,55 @@ class ParticipantMatcher:
         auc_score = roc_auc_score(y_val, val_pred)
         print(f"Model trained. Validation AUC: {auc_score:.4f}")
         
-    def find_best_matches(self, use_ml=True) -> list:
+    def find_best_matches(self, use_ml=True, top_n=3) -> list:
         """
-        Find the best matches using ML model.
+        Find the top N matches for each participant using ML model or heuristic scoring.
         
         Args:
             use_ml (bool): Whether to use ML model for scoring
+            top_n (int): Number of top matches to return for each participant
             
         Returns:
-            list: List of matched pairs [(participant1, participant2, score)]
+            list: List of tuples (participant1, participant2, score) for top N matches per participant
         """
         if not self.participants:
             return []
             
-        matches = []
-        matched = set()
+        all_matches = []
         
-        # For each participant, find the best match
-        for p1 in self.participants:
-            if p1.id in matched:
-                continue
-                
-            best_match = None
-            best_score = 0
+        # For each participant, find top N matches
+        for i, p1 in enumerate(self.participants):
+            participant_matches = []
             
-            for p2 in self.participants:
-                if p2.id in matched or p2.id == p1.id:
+            # Compare with all other participants
+            for j, p2 in enumerate(self.participants):
+                if i == j:  # Skip self-comparison
                     continue
                     
+                # Calculate similarity score
                 score = p1.calculate_similarity_score(p2, self.model if use_ml else None)
-                
-                if score > best_score:
-                    best_score = score
-                    best_match = p2
-                    
-            if best_match:
-                matches.append((p1, best_match, best_score))
-                matched.add(p1.id)
-                matched.add(best_match.id)
-                
-        return matches
+                participant_matches.append((p1, p2, score))
+            
+            # Sort matches by score in descending order and take top N
+            participant_matches.sort(key=lambda x: x[2], reverse=True)
+            all_matches.extend(participant_matches[:top_n])
+        
+        # Sort all matches by score in descending order
+        all_matches.sort(key=lambda x: x[2], reverse=True)
+        
+        # Remove duplicates (if A-B and B-A exist, keep only one with higher score)
+        unique_matches = {}
+        for match in all_matches:
+            p1_id, p2_id = match[0].id, match[1].id
+            key = tuple(sorted([p1_id, p2_id]))
+            
+            if key not in unique_matches or match[2] > unique_matches[key][2]:
+                unique_matches[key] = match
+        
+        # Convert back to list and sort by score
+        unique_matches = sorted(unique_matches.values(), key=lambda x: x[2], reverse=True)
+        
+        return unique_matches
     
     def evaluate_matches(self, matches: list) -> dict:
         """
