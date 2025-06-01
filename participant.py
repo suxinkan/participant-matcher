@@ -38,9 +38,25 @@ class Participant:
         
         # Pre-fit encoders with possible values
         self.experience_encoder.fit(['beginner', 'intermediate', 'advanced'])
-        self.location_encoder.fit(['New York', 'Boston', 'Chicago', 'Los Angeles'])
-        self.gender_encoder.fit(['male', 'female', 'other'])
+        
+        # Initialize with common locations, but we'll refit with all locations when needed
+        self.location_encoder.fit(['New York', 'Boston', 'Chicago', 'Los Angeles', 'Seattle', 
+                                 'Austin', 'Denver', 'Miami', 'Atlanta', 'Portland'])
+        
+        self.gender_encoder.fit(['male', 'female', 'non-binary', 'other', 'prefer-not-to-say'])
+        
+        # Track if we need to refit the location encoder
+        self._fitted_locations = set(self.location_encoder.classes_)
 
+    def _update_location_encoder(self, locations):
+        """Update the location encoder with new locations if needed."""
+        new_locations = set(locations) - self._fitted_locations
+        if new_locations:
+            # Refit the encoder with all locations (old and new)
+            all_locations = list(self.location_encoder.classes_) + list(new_locations)
+            self.location_encoder.fit(all_locations)
+            self._fitted_locations = set(all_locations)
+            
     def get_feature_vector(self):
         """
         Get a feature vector representation of this participant.
@@ -50,6 +66,9 @@ class Participant:
         if self._processed_features is not None:
             return self._processed_features
 
+        # Handle new locations
+        self._update_location_encoder([self.location])
+
         # Convert interests to binary vector
         interest_vector = np.zeros(len(self.interests))
         for i, interest in enumerate(sorted(self.interests)):
@@ -57,8 +76,22 @@ class Participant:
 
         # Encode categorical features
         exp_encoded = self.experience_encoder.transform([self.experience_level])[0]
-        loc_encoded = self.location_encoder.transform([self.location])[0]
-        gender_encoded = self.gender_encoder.transform([self.gender])[0] if self.gender else 0
+        
+        # Handle location encoding with fallback
+        try:
+            loc_encoded = self.location_encoder.transform([self.location])[0]
+        except ValueError:
+            # If location is still not in encoder, add it and retry
+            self.location_encoder.fit(np.append(self.location_encoder.classes_, self.location))
+            loc_encoded = self.location_encoder.transform([self.location])[0]
+            
+        # Handle gender encoding
+        try:
+            gender_encoded = self.gender_encoder.transform([self.gender])[0] if self.gender else 0
+        except ValueError:
+            # If gender is not in encoder, add it and retry
+            self.gender_encoder.fit(np.append(self.gender_encoder.classes_, self.gender))
+            gender_encoded = self.gender_encoder.transform([self.gender])[0] if self.gender else 0
         
         # Convert availability to numeric features
         availability_vector = self._availability_to_vector()
