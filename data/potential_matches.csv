@@ -1,50 +1,51 @@
-participant_id,department,match1_id,match1_dept,match1_score,match2_id,match2_dept,match2_score,match3_id,match3_dept,match3_score
-p1,Engineering,p2,Engineering,0.7300,p46,Sales,0.5375,p15,Product,0.4700
-p2,Engineering,p46,Sales,0.4625,p14,Product,0.4500,,,
-p3,Engineering,p9,Engineering,0.4950,p25,Design,0.3467,p47,Sales,0.3300
-p4,Engineering,p43,Sales,0.5083,p46,Sales,0.4500,p7,Engineering,0.4250
-p5,Engineering,p22,Design,0.3900,p9,Engineering,0.3833,p13,Product,0.3600
-p6,Engineering,p10,Engineering,0.4467,p45,Sales,0.3583,p13,Product,0.3467
-p7,Engineering,p51,Operations,0.4367,p8,Engineering,0.4000,,,
-p8,Engineering,p36,Marketing,0.4650,p48,Sales,0.4500,,,
-p9,Engineering,p22,Design,0.4750,,,,,,
-p10,Engineering,p24,Design,0.4217,p13,Product,0.3375,,,
-p11,Product,p15,Product,0.5383,p16,Product,0.3667,p20,Product,0.3500
-p12,Product,p34,Marketing,0.4450,p18,Product,0.3950,p7,Engineering,0.3583
-p13,Product,p45,Sales,0.5375,p21,Design,0.4325,p54,Operations,0.4075
-p14,Product,p18,Product,0.4800,p45,Sales,0.4450,,,
-p15,Product,p16,Product,0.6900,p23,Design,0.5375,,,
-p16,Product,p23,Design,0.5200,p42,Sales,0.4333,,,
-p17,Product,p29,Design,0.3417,p13,Product,0.3375,p2,Engineering,0.3300
-p18,Product,p25,Design,0.4333,,,,,,
-p19,Product,p24,Design,0.3750,p15,Product,0.3375,p20,Product,0.3375
-p20,Product,p33,Marketing,0.5375,p49,Sales,0.4625,p13,Product,0.4000
-p21,Design,p22,Design,0.4650,p27,Design,0.4175,,,
-p22,Design,p42,Sales,0.4500,,,,,,
-p23,Design,p25,Design,0.4000,,,,,,
-p24,Design,p53,Operations,0.5375,p50,Sales,0.4167,,,
-p25,Design,p37,Marketing,0.5083,p45,Sales,0.5083,p15,Product,0.4583
-p26,Design,p29,Design,0.3867,p22,Design,0.3667,p53,Operations,0.3583
-p27,Design,p35,Marketing,0.4450,p23,Design,0.3575,,,
-p28,Design,p41,Sales,0.4500,p54,Operations,0.3875,p25,Design,0.3667
-p29,Design,p50,Sales,0.5083,p43,Sales,0.4333,p24,Design,0.4083
-p30,Design,p31,Marketing,0.4967,p38,Marketing,0.4500,p22,Design,0.3900
-p31,Marketing,p38,Marketing,0.5533,p44,Sales,0.5500,,,
-p32,Marketing,p40,Marketing,0.4583,p53,Operations,0.4550,p37,Marketing,0.3883
-p33,Marketing,p39,Marketing,0.4000,p54,Operations,0.3875,,,
-p34,Marketing,p53,Operations,0.5375,p39,Marketing,0.4750,,,
-p35,Marketing,p38,Marketing,0.3867,p29,Design,0.3467,,,
-p36,Marketing,p48,Sales,0.4450,p33,Marketing,0.3150,,,
-p37,Marketing,p39,Marketing,0.4700,p45,Sales,0.4500,,,
-p38,Marketing,p47,Sales,0.4167,,,,,,
-p39,Marketing,p43,Sales,0.5667,,,,,,
-p40,Marketing,p48,Sales,0.5667,p39,Marketing,0.4000,,,
-p41,Sales,p46,Sales,0.4000,p4,Engineering,0.3875,,,
-p42,Sales,p8,Engineering,0.3750,,,,,,
-p44,Sales,p46,Sales,0.3867,p48,Sales,0.3300,,,
-p47,Sales,p41,Sales,0.3500,p50,Sales,0.3375,,,
-p49,Sales,p51,Operations,0.4450,p52,Operations,0.3750,,,
-p50,Sales,p53,Operations,0.4050,,,,,,
-p51,Operations,p52,Operations,0.5400,,,,,,
-p52,Operations,p38,Marketing,0.2700,,,,,,
-p54,Operations,p20,Product,0.3875,,,,,,
+participant_id,department,potential_matches
+p1,Engineering,"[('p2', '0.7300'), ('p46', '0.5375'), ('p15', '0.4700'), ('p37', '0.4400'), ('p4', '0.4175')]"
+p2,Engineering,"[('p46', '0.4625'), ('p14', '0.4500'), ('p45', '0.3750'), ('p4', '0.3625')]"
+p3,Engineering,"[('p9', '0.4950'), ('p25', '0.3467'), ('p47', '0.3300'), ('p6', '0.3083'), ('p2', '0.2625')]"
+p4,Engineering,"[('p43', '0.5083'), ('p46', '0.4500'), ('p7', '0.4250'), ('p41', '0.3875')]"
+p5,Engineering,"[('p22', '0.3900'), ('p9', '0.3833'), ('p13', '0.3600'), ('p42', '0.3583'), ('p19', '0.3200')]"
+p6,Engineering,"[('p10', '0.4467'), ('p45', '0.3583'), ('p13', '0.3467'), ('p5', '0.3083')]"
+p7,Engineering,"[('p51', '0.4367'), ('p8', '0.4000'), ('p12', '0.3583'), ('p33', '0.3583')]"
+p8,Engineering,"[('p36', '0.4650'), ('p48', '0.4500'), ('p42', '0.3750'), ('p19', '0.3175')]"
+p9,Engineering,"[('p22', '0.4750'), ('p39', '0.3300'), ('p2', '0.3300')]"
+p10,Engineering,"[('p24', '0.4217'), ('p13', '0.3375'), ('p5', '0.3200'), ('p46', '0.3000')]"
+p11,Product,"[('p15', '0.5383'), ('p16', '0.3667'), ('p20', '0.3500'), ('p12', '0.3083'), ('p19', '0.3083')]"
+p12,Product,"[('p34', '0.4450'), ('p18', '0.3950'), ('p31', '0.3450'), ('p33', '0.3200')]"
+p13,Product,"[('p45', '0.5375'), ('p21', '0.4325'), ('p54', '0.4075'), ('p20', '0.4000')]"
+p14,Product,"[('p18', '0.4800'), ('p45', '0.4450'), ('p54', '0.3750'), ('p19', '0.3150')]"
+p15,Product,"[('p16', '0.6900'), ('p23', '0.5375'), ('p25', '0.4583')]"
+p16,Product,"[('p23', '0.5200'), ('p42', '0.4333'), ('p19', '0.3300')]"
+p17,Product,"[('p29', '0.3417'), ('p13', '0.3375'), ('p2', '0.3300'), ('p39', '0.3200'), ('p6', '0.2867')]"
+p18,Product,"[('p25', '0.4333'), ('p40', '0.3750'), ('p49', '0.3467')]"
+p19,Product,"[('p24', '0.3750'), ('p15', '0.3375'), ('p20', '0.3375')]"
+p20,Product,"[('p33', '0.5375'), ('p49', '0.4625'), ('p45', '0.3875'), ('p54', '0.3875')]"
+p21,Design,"[('p22', '0.4650'), ('p27', '0.4175'), ('p39', '0.3700'), ('p30', '0.3500')]"
+p22,Design,"[('p42', '0.4500'), ('p30', '0.3900')]"
+p23,Design,"[('p25', '0.4000'), ('p27', '0.3575'), ('p34', '0.3500')]"
+p24,Design,"[('p53', '0.5375'), ('p50', '0.4167'), ('p29', '0.4083')]"
+p25,Design,"[('p37', '0.5083'), ('p45', '0.5083')]"
+p26,Design,"[('p29', '0.3867'), ('p22', '0.3667'), ('p53', '0.3583'), ('p24', '0.3283'), ('p30', '0.3283')]"
+p27,Design,"[('p35', '0.4450'), ('p20', '0.3450'), ('p1', '0.3250')]"
+p28,Design,"[('p41', '0.4500'), ('p54', '0.3875'), ('p25', '0.3667'), ('p7', '0.3000'), ('p13', '0.3000')]"
+p29,Design,"[('p50', '0.5083'), ('p43', '0.4333'), ('p22', '0.3667')]"
+p30,Design,"[('p31', '0.4967'), ('p38', '0.4500'), ('p24', '0.3575')]"
+p31,Marketing,"[('p38', '0.5533'), ('p44', '0.5500'), ('p24', '0.3750')]"
+p32,Marketing,"[('p40', '0.4583'), ('p53', '0.4550'), ('p37', '0.3883'), ('p24', '0.3750'), ('p54', '0.3583')]"
+p33,Marketing,"[('p39', '0.4000'), ('p54', '0.3875'), ('p40', '0.3500')]"
+p34,Marketing,"[('p53', '0.5375'), ('p39', '0.4750'), ('p38', '0.3883'), ('p54', '0.3750')]"
+p35,Marketing,"[('p38', '0.3867'), ('p29', '0.3467'), ('p7', '0.3417'), ('p26', '0.3250')]"
+p36,Marketing,"[('p48', '0.4450'), ('p33', '0.3150'), ('p47', '0.3000'), ('p32', '0.2917')]"
+p37,Marketing,"[('p39', '0.4700'), ('p45', '0.4500')]"
+p38,Marketing,"[('p47', '0.4167')]"
+p39,Marketing,"[('p43', '0.5667'), ('p53', '0.4450')]"
+p40,Marketing,"[('p48', '0.5667'), ('p39', '0.4000')]"
+p41,Sales,"[('p46', '0.4000'), ('p47', '0.3500'), ('p45', '0.3300')]"
+p42,Sales,"[('p45', '0.3717')]"
+p43,Sales,"[('p38', '0.3417'), ('p46', '0.3300')]"
+p44,Sales,"[('p46', '0.3867'), ('p48', '0.3300'), ('p42', '0.3133'), ('p43', '0.3083')]"
+p47,Sales,"[('p50', '0.3375'), ('p54', '0.3325')]"
+p48,Sales,"[('p42', '0.3133')]"
+p49,Sales,"[('p51', '0.4450'), ('p52', '0.3750'), ('p30', '0.3250')]"
+p50,Sales,"[('p53', '0.4050'), ('p37', '0.3750')]"
+p51,Operations,"[('p52', '0.5400'), ('p41', '0.2900'), ('p54', '0.2700')]"
+p52,Operations,"[('p38', '0.2700'), ('p19', '0.2400'), ('p33', '0.2400')]"

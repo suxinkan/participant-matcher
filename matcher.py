@@ -123,9 +123,9 @@ class ParticipantMatcher:
                 score = p1.calculate_similarity_score(p2, self.model if use_ml else None)
                 participant_matches.append((p1, p2, score))
             
-            # Sort matches by score in descending order and take top N
-            participant_matches.sort(key=lambda x: x[2], reverse=True)
-            all_matches.extend(participant_matches[:top_n])
+            # Get top N matches for this participant
+            top_matches = sorted(participant_matches, key=lambda x: x[2], reverse=True)[:top_n]
+            all_matches.extend(top_matches)
         
         # Sort all matches by score in descending order
         all_matches.sort(key=lambda x: x[2], reverse=True)

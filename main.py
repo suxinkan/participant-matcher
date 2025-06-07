@@ -5,6 +5,7 @@ import csv
 import ast
 from datetime import datetime
 import os
+from pathlib import Path
 
 def load_participants_from_csv(filename):
     """Load participants from a CSV file."""
@@ -56,6 +57,14 @@ def load_participants_from_csv(filename):
     return participants
 
 def main():
+    import argparse
+    
+    # Set up command line argument parsing
+    parser = argparse.ArgumentParser(description='Participant Matching System')
+    parser.add_argument('--num-matches', type=int, default=3,
+                      help='Number of potential matches to show per participant (default: 3)')
+    args = parser.parse_args()
+    
     # Create matcher and load participants from CSV
     matcher = ParticipantMatcher()
     try:
@@ -99,8 +108,9 @@ def main():
     if 'use_ml' not in locals():
         use_ml = False
     
-    # Find best matches (using ML if available and trained successfully)
-    matches = matcher.find_best_matches(use_ml=use_ml, top_n=3)
+    # Find best matches
+    print(f"\nFinding best matches with up to {args.num_matches} potential matches per participant...")
+    matches = matcher.find_best_matches(use_ml=use_ml, top_n=args.num_matches)
     
     # Organize matches by participant for display
     matches_by_participant = {}
@@ -125,10 +135,17 @@ def main():
     print("\nOverall Match Statistics:")
     print(json.dumps(stats, indent=2))
     
-    # Save potential matches to CSV
-    potential_file = save_matches_to_csv(participants, matches_by_participant, confirmed=False)
-    if potential_file:
-        print(f"\nPotential match details have been saved to {potential_file}")
+    # Save matches to CSV
+    potential_matches_file = save_matches_to_csv(
+        participants, 
+        matches_by_participant, 
+        filename='potential_matches.csv',
+        num_matches=args.num_matches
+    )
+    
+    # Find and save unmatched participants
+    if potential_matches_file:
+        find_and_save_unmatched_participants(participants, os.path.join('data', 'potential_matches.csv'))
     
     # Generate and save confirmed matches with training data
     confirmed_matches = generate_confirmed_matches(matches_by_participant)
@@ -150,6 +167,28 @@ def main():
             print(f"  {i}. {p1} ↔ {p2} (Score: {score:.2f})")
         print(f"\nTotal confirmed matches: {len(confirmed_matches)}")
     
+    # Identify unmatched participants
+    all_participant_ids = {p.id for p in participants}
+    matched_participant_ids = set()
+    for p1, p2, _ in confirmed_matches:
+        matched_participant_ids.add(p1)
+        matched_participant_ids.add(p2)
+    
+    unmatched_participants = sorted(list(all_participant_ids - matched_participant_ids))
+    
+    # Save unmatched participants to CSV
+    if unmatched_participants:
+        unmatched_file = 'data/unmatched_participants.csv'
+        with open(unmatched_file, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(['participant_id'])
+            for pid in unmatched_participants:
+                writer.writerow([pid])
+        print(f"\nFound {len(unmatched_participants)} unmatched participants. Saved to {unmatched_file}")
+        print("Unmatched participants:", ", ".join(unmatched_participants))
+    else:
+        print("\nAll participants have been matched!")
+
     # Load and analyze training data if available
     if training_file and os.path.exists(training_file):
         try:
@@ -325,7 +364,7 @@ def generate_confirmed_matches(matches_by_participant):
     
     return confirmed_matches
 
-def save_matches_to_csv(participants, matches_by_participant, filename=None, confirmed=False):
+def save_matches_to_csv(participants, matches_by_participant, filename=None, confirmed=False, num_matches=3):
     """Save matches to a CSV file in the data directory with one row per participant.
     
     Args:
@@ -333,6 +372,7 @@ def save_matches_to_csv(participants, matches_by_participant, filename=None, con
         matches_by_participant: Dictionary mapping participant IDs to their top matches
         filename: Output filename (without path). If None, generates a default filename.
         confirmed: If True, saves only confirmed matches (mutual best matches)
+        num_matches: Number of top matches to include for each participant
     """
     ensure_data_directory()
     
@@ -345,60 +385,106 @@ def save_matches_to_csv(participants, matches_by_participant, filename=None, con
     if not filename.endswith('.csv'):
         filename += '.csv'
     
-    # Field names including participant info and matches
-    fieldnames = ['participant_id', 'department']
-    for i in range(1, 4):
-        fieldnames.extend([f'match{i}_id', f'match{i}_dept', f'match{i}_score'])
+    # Field names for the CSV
+    fieldnames = ['participant_id', 'department', 'potential_matches']
     
     try:
         with open(filename, 'w', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             
-            # Sort participants by their numeric ID
-            sorted_participants = sorted(participants, key=lambda p: int(p.id[1:]) if p.id[1:].isdigit() else float('inf'))
+            # Create a dictionary of participants by ID for quick lookup
+            participants_by_id = {p.id: p for p in participants}
             
-            for participant in sorted_participants:
-                p_id = participant.id
+            for p_id, participant in participants_by_id.items():
                 if p_id not in matches_by_participant:
                     continue
-                    
-                # Get top 3 matches for this participant
+                
+                # Get top N matches for this participant
                 participant_matches = matches_by_participant[p_id]
                 participant_matches.sort(key=lambda x: x[1], reverse=True)
-                top_matches = participant_matches[:3]
+                top_matches = participant_matches[:num_matches]
+                
+                # Format matches as a list of (id, score) tuples
+                matches_list = [(match.id, f"{score:.4f}") for match, score in top_matches]
                 
                 # Prepare the row with participant info and matches
                 row = {
                     'participant_id': p_id,
-                    'department': participant.department
+                    'department': participant.department,
+                    'potential_matches': str(matches_list)  # Store as string for CSV
                 }
-                
-                # Add match information for up to 3 matches
-                for i, (match, score) in enumerate(top_matches, 1):
-                    row.update({
-                        f'match{i}_id': match.id,
-                        f'match{i}_dept': match.department,
-                        f'match{i}_score': f"{score:.4f}"
-                    })
                 
                 writer.writerow(row)
         
         print(f"Matches saved to {filename}")
         return filename
     except Exception as e:
-        print(f"Error saving matches to {filename}: {str(e)}")
+        print(f"Error saving matches to CSV: {str(e)}")
         return None
 
 def print_matches(matches, title):
     """Helper function to print matches."""
     print(f"\n{title}:")
-    for p1, p2, score in matches:
-        print(f"\nMatch between {p1.id} ({p1.department}) and {p2.id} ({p2.department})")
-        print(f"Similarity Score: {score:.2f}")
-        print(f"Common Interests: {set(p1.interests) & set(p2.interests)}")
-        print(f"Shared Days: {set(p1.availability.keys()) & set(p2.availability.keys())}")
-        print(f"Same Department: {'Yes' if p1.department == p2.department else 'No'}")
+    for i, (p1, p2, score) in enumerate(matches, 1):
+        print(f"  {i}. {p1} ↔ {p2} (Score: {score:.2f})")
+
+def find_and_save_unmatched_participants(participants, matches_file, output_dir='data'):
+    """
+    Find participants who don't have any matches and save them to a CSV file.
+    
+    Args:
+        participants: List of all participant objects
+        matches_file: Path to the matches CSV file
+        output_dir: Directory to save the unmatched participants file
+        
+    Returns:
+        list: List of unmatched participant IDs
+    """
+    # Ensure output directory exists
+    os.makedirs(output_dir, exist_ok=True)
+    output_file = os.path.join(output_dir, 'unmatched_participants.csv')
+    
+    # Get all participant IDs
+    all_participant_ids = {p.id for p in participants}
+    
+    # Get matched participant IDs from the matches file
+    matched_participant_ids = set()
+    
+    try:
+        with open(matches_file, 'r') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                # Add the participant ID
+                matched_participant_ids.add(row['participant_id'])
+                
+                # Add all their matches
+                if row['potential_matches']:
+                    matches = ast.literal_eval(row['potential_matches'])
+                    for match_id, _ in matches:
+                        matched_participant_ids.add(match_id)
+    except Exception as e:
+        print(f"Error reading matches file: {e}")
+        return []
+    
+    # Find unmatched participants
+    unmatched = sorted(list(all_participant_ids - matched_participant_ids))
+    
+    if unmatched:
+        print(f"\nFound {len(unmatched)} unmatched participants.")
+        
+        # Save to CSV
+        with open(output_file, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(['participant_id'])
+            for pid in unmatched:
+                writer.writerow([pid])
+        
+        print(f"Unmatched participants saved to: {output_file}")
+    else:
+        print("\nAll participants have at least one match.")
+    
+    return unmatched
 
 if __name__ == "__main__":
     main()
