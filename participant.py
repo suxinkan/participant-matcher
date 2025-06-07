@@ -3,7 +3,7 @@ from sklearn.preprocessing import LabelEncoder
 import json
 
 class Participant:
-    def __init__(self, id, interests, availability, experience_level, location, age=None, gender=None):
+    def __init__(self, id, interests, availability, experience_level, location, department, age=None, gender=None):
         """
         Initialize a participant with various attributes.
         
@@ -13,9 +13,12 @@ class Participant:
             availability (dict): Dictionary of available time slots
             experience_level (str): Experience level (beginner, intermediate, advanced)
             location (str): Geographic location
+            department (str): Department of the participant (required)
             age (int, optional): Age of the participant
             gender (str, optional): Gender of the participant
         """
+        if not department or not str(department).strip():
+            raise ValueError("Department is required for all participants")
         self.id = id
         self.interests = interests
         self.availability = availability
@@ -23,6 +26,7 @@ class Participant:
         self.location = location
         self.age = age
         self.gender = gender
+        self.department = department
         
         # Initialize encoders
         self._initialize_encoders()
@@ -35,27 +39,42 @@ class Participant:
         self.experience_encoder = LabelEncoder()
         self.location_encoder = LabelEncoder()
         self.gender_encoder = LabelEncoder()
+        self.department_encoder = LabelEncoder()
         
         # Pre-fit encoders with possible values
         self.experience_encoder.fit(['beginner', 'intermediate', 'advanced'])
         
-        # Initialize with common locations, but we'll refit with all locations when needed
+        # Initialize with common locations and departments, but we'll refit with all when needed
         self.location_encoder.fit(['New York', 'Boston', 'Chicago', 'Los Angeles', 'Seattle', 
                                  'Austin', 'Denver', 'Miami', 'Atlanta', 'Portland'])
         
         self.gender_encoder.fit(['male', 'female', 'non-binary', 'other', 'prefer-not-to-say'])
         
-        # Track if we need to refit the location encoder
+        # Initialize with common departments
+        self.department_encoder.fit(['Engineering', 'Product', 'Design', 'Marketing', 
+                                   'Sales', 'HR', 'Finance', 'Operations', 'Other'])
+        
+        # Track if we need to refit the encoders
         self._fitted_locations = set(self.location_encoder.classes_)
+        self._fitted_departments = set(self.department_encoder.classes_)
 
-    def _update_location_encoder(self, locations):
-        """Update the location encoder with new locations if needed."""
-        new_locations = set(locations) - self._fitted_locations
-        if new_locations:
-            # Refit the encoder with all locations (old and new)
-            all_locations = list(self.location_encoder.classes_) + list(new_locations)
-            self.location_encoder.fit(all_locations)
-            self._fitted_locations = set(all_locations)
+    def _update_encoders(self, locations=None, departments=None):
+        """Update the encoders with new values if needed."""
+        # Update location encoder if needed
+        if locations is not None:
+            new_locations = set(locations) - self._fitted_locations
+            if new_locations:
+                all_locations = list(self.location_encoder.classes_) + list(new_locations)
+                self.location_encoder.fit(all_locations)
+                self._fitted_locations = set(all_locations)
+        
+        # Update department encoder if needed
+        if departments is not None and self.department is not None:
+            new_departments = set(departments) - self._fitted_departments
+            if new_departments:
+                all_departments = list(self.department_encoder.classes_) + list(new_departments)
+                self.department_encoder.fit(all_departments)
+                self._fitted_departments = set(all_departments)
             
     def get_feature_vector(self):
         """
@@ -66,8 +85,8 @@ class Participant:
         if self._processed_features is not None:
             return self._processed_features
 
-        # Handle new locations
-        self._update_location_encoder([self.location])
+        # Update encoders with any new values
+        self._update_encoders(locations=[self.location], departments=[self.department] if self.department else [])
 
         # Convert interests to binary vector
         interest_vector = np.zeros(len(self.interests))
@@ -93,15 +112,21 @@ class Participant:
             self.gender_encoder.fit(np.append(self.gender_encoder.classes_, self.gender))
             gender_encoded = self.gender_encoder.transform([self.gender])[0] if self.gender else 0
         
+        # Handle department encoding
+        try:
+            dept_encoded = self.department_encoder.transform([self.department])[0] if self.department else 0
+        except ValueError:
+            # If department is not in encoder, add it and retry
+            self.department_encoder.fit(np.append(self.department_encoder.classes_, self.department))
+            dept_encoded = self.department_encoder.transform([self.department])[0] if self.department else 0
+        
         # Convert availability to numeric features
         availability_vector = self._availability_to_vector()
         
         # Combine all features
         features = np.concatenate([
             interest_vector,
-            [exp_encoded],
-            [loc_encoded],
-            [gender_encoded],
+            [exp_encoded, loc_encoded, gender_encoded, dept_encoded],
             availability_vector
         ])
         
@@ -163,35 +188,40 @@ class Participant:
         # Experience level similarity
         exp1 = self.experience_encoder.transform([self.experience_level])[0]
         exp2 = other.experience_encoder.transform([other.experience_level])[0]
-        exp_score = 1 - abs(exp1 - exp2) / 2
+        exp_score = 1.0 - abs(exp1 - exp2) / 2.0  # Normalize to 0-1 range
         
-        # Location similarity
+        # Location similarity (1 if same, 0 otherwise)
         loc1 = self.location_encoder.transform([self.location])[0]
         loc2 = other.location_encoder.transform([other.location])[0]
-        loc_score = 1 if loc1 == loc2 else 0
+        loc_score = 1.0 if loc1 == loc2 else 0.0
         
-        # Gender similarity (if provided)
+        # Gender similarity (1 if same, 0 otherwise)
         if self.gender and other.gender:
             gender1 = self.gender_encoder.transform([self.gender])[0]
             gender2 = other.gender_encoder.transform([other.gender])[0]
-            gender_score = 1 if gender1 == gender2 else 0
+            gender_score = 1.0 if gender1 == gender2 else 0.0
         else:
             gender_score = 0
         
+        # Department similarity (1 if same, 0 otherwise)
+        dept_score = 1.0 if self.department == other.department else 0.0
+    
         # Weighted average of all factors
         weights = {
-            'interests': 0.4,
-            'availability': 0.3,
-            'experience': 0.2,
-            'location': 0.1,
-            'gender': 0.05
+            'interests': 0.35,      # Reduced from 0.4 to make room for department
+            'availability': 0.3,    # Kept the same
+            'experience': 0.15,     # Reduced from 0.2 to make room for department
+            'location': 0.08,       # Reduced from 0.1 to make room for department
+            'gender': 0.02,         # Reduced from 0.05 to make room for department
+            'department': 0.1       # New department weight
         }
         
         return (interest_score * weights['interests'] + 
                 availability_score * weights['availability'] +
                 exp_score * weights['experience'] +
                 loc_score * weights['location'] +
-                gender_score * weights['gender'])
+                gender_score * weights['gender'] +
+                dept_score * weights['department'])
 
     def _calculate_availability_similarity(self, other):
         """Calculate availability similarity."""

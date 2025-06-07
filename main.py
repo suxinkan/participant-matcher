@@ -27,6 +27,10 @@ def load_participants_from_csv(filename):
                     availability = ast.literal_eval(row['availability'])
                     age = int(row['age']) if row['age'] else None
                     
+                    # Check if department is provided and not empty
+                    if 'department' not in row or not row['department'].strip():
+                        raise ValueError(f"Missing required 'department' field for participant {row.get('id', 'unknown')}")
+                        
                     participant = Participant(
                         id=row['id'],
                         interests=interests,
@@ -34,7 +38,8 @@ def load_participants_from_csv(filename):
                         experience_level=row['experience_level'],
                         location=row['location'],
                         age=age,
-                        gender=row['gender'] if row['gender'] else None
+                        gender=row['gender'] if row['gender'] else None,
+                        department=row['department'].strip()
                     )
                     participants.append(participant)
                 except Exception as e:
@@ -340,10 +345,10 @@ def save_matches_to_csv(participants, matches_by_participant, filename=None, con
     if not filename.endswith('.csv'):
         filename += '.csv'
     
-    # Simplified field names - only participant ID, match IDs, and scores
-    fieldnames = ['participant_id']
+    # Field names including participant info and matches
+    fieldnames = ['participant_id', 'department']
     for i in range(1, 4):
-        fieldnames.extend([f'match{i}_id', f'match{i}_score'])
+        fieldnames.extend([f'match{i}_id', f'match{i}_dept', f'match{i}_score'])
     
     try:
         with open(filename, 'w', newline='') as csvfile:
@@ -363,13 +368,17 @@ def save_matches_to_csv(participants, matches_by_participant, filename=None, con
                 participant_matches.sort(key=lambda x: x[1], reverse=True)
                 top_matches = participant_matches[:3]
                 
-                # Prepare the row with participant ID and matches
-                row = {'participant_id': p_id}
+                # Prepare the row with participant info and matches
+                row = {
+                    'participant_id': p_id,
+                    'department': participant.department
+                }
                 
                 # Add match information for up to 3 matches
                 for i, (match, score) in enumerate(top_matches, 1):
                     row.update({
                         f'match{i}_id': match.id,
+                        f'match{i}_dept': match.department,
                         f'match{i}_score': f"{score:.4f}"
                     })
                 
@@ -385,10 +394,11 @@ def print_matches(matches, title):
     """Helper function to print matches."""
     print(f"\n{title}:")
     for p1, p2, score in matches:
-        print(f"\nMatch between {p1.id} and {p2.id}")
+        print(f"\nMatch between {p1.id} ({p1.department}) and {p2.id} ({p2.department})")
         print(f"Similarity Score: {score:.2f}")
         print(f"Common Interests: {set(p1.interests) & set(p2.interests)}")
         print(f"Shared Days: {set(p1.availability.keys()) & set(p2.availability.keys())}")
+        print(f"Same Department: {'Yes' if p1.department == p2.department else 'No'}")
 
 if __name__ == "__main__":
     main()
