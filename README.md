@@ -1,2 +1,2 @@
 # participant-matcher
-Person-to-person matching - built using GenAI
+Person-to-person matching - built entirely using agentic AI models
